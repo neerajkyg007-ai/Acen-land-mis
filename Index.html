@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACEN Land Tracker - Executive Portal</title>
+
+  <!-- Google Search Console Verification & SEO -->
+  <meta name="description" content="ACEN India Renewable Energy Portfolio - Real-time Land Acquisition & Aggregator MIS Executive Portal.">
+  <meta name="keywords" content="ACEN Land Tracker, ACEN India, Land Acquisition MIS, Executive Portal">
+  <meta name="robots" content="index, follow">
+  <!-- GOOGLE KI VERIFICATION KEY YAHAN AAYEGI AGAR MILE TOH: -->
+  <!-- <meta name="google-site-verification" content="YOUR_GOOGLE_CODE_HERE" /> -->
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+    body { 
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #F8FAFC;
+      color: #0F172A;
+      user-select: none;
+    }
+    .num-font {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-feature-settings: "tnum" 1, "cv05" 1;
+      letter-spacing: -0.02em;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #F1F5F9; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+  </style>
+</head>
+<body class="min-h-screen antialiased flex flex-col justify-between selection:bg-none" oncontextmenu="return false;">
+
+  <!-- PASSCODE RESTRICTION OVERLAY SCREEN -->
+  <div id="authGate" class="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-md flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl border border-slate-100 text-center">
+      <div class="w-16 h-16 bg-amber-500/10 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <h2 class="text-xl font-black text-slate-900 tracking-tight">ACEN Executive Access</h2>
+      <p class="text-xs text-slate-500 mt-1 mb-6">Restricted Internal Telemetry Portal. Please enter authorised access PIN to view.</p>
+      
+      <div class="space-y-4">
+        <input type="password" id="accessPin" placeholder="Enter Access PIN" class="w-full text-center tracking-widest text-lg font-bold bg-slate-50 border border-slate-300 rounded-xl px-4 py-3 focus:outline-none focus:border-amber-500 transition">
+        <button onclick="checkAccess()" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2">
+          <span>Authorize Access</span> <i class="fa-solid fa-arrow-right text-xs"></i>
+        </button>
+        <p id="authError" class="text-xs text-rose-500 font-bold hidden">Invalid PIN. Please check with administrator.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOP NAVBAR -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-40 px-6 py-3 shadow-xs">
+    <div class="w-full mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="flex items-center gap-3 bg-slate-900 px-4 py-2 rounded-xl shadow-md border border-slate-800">
+          <svg class="w-7 h-7" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M50 12 L38 32 C38 32 44 42 50 42 C56 42 62 32 62 32 L50 12Z" fill="#F59E0B" />
+            <path d="M22 68 L40 60 C40 60 41 48 36 43 C31 38 20 44 20 44 L22 68Z" fill="#F59E0B" />
+            <path d="M78 68 L60 60 C60 60 59 48 64 43 C69 38 80 44 80 44 L78 68Z" fill="#F59E0B" />
+          </svg>
+          <span class="text-xl font-black text-white tracking-wider">ACEN</span>
+          <span class="h-5 w-[2px] bg-slate-600 mx-0.5"></span>
+          <span class="text-lg font-light text-slate-200 tracking-wide">India</span>
+        </div>
+        <div class="hidden sm:block">
+          <div class="flex items-center gap-2">
+            <h1 class="text-sm font-bold text-slate-800 uppercase tracking-tight">ACEN Land Tracker</h1>
+            <span class="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase">View Only</span>
+          </div>
+          <p class="text-[11px] text-slate-500">Live Multi-State Master Portfolio</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button onclick="fetchCloudData()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-2">
+          <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i> <span>Refresh Live Data</span>
+        </button>
+        <span id="syncBadge" class="text-[11px] text-slate-400 font-medium hidden sm:inline">Checking cloud...</span>
+        <button onclick="lockScreen()" title="Lock Screen" class="text-slate-400 hover:text-slate-700 p-2 rounded-lg text-sm transition">
+          <i class="fa-solid fa-lock"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN DASHBOARD WRAPPER -->
+  <main class="w-full mx-auto p-4 md:p-6 space-y-5">
+
+    <!-- CASCADING SELECTION BANNER -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-4 md:p-5 shadow-xs">
+      <div class="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600">
+          <i class="fa-solid fa-filter text-amber-500"></i> Cascading Selection Criteria
+        </div>
+        <button onclick="resetFilters()" class="text-xs text-slate-400 hover:text-slate-700 transition flex items-center gap-1 font-medium">
+          <i class="fa-solid fa-rotate-left"></i> Reset Defaults (All)
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">1. Select State</label>
+          <select id="stateSelect" onchange="onStateChange()" class="w-full bg-slate-50 border border-slate-300 hover:border-slate-400 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-amber-500 transition">
+            <option value="ALL">All States (Consolidated)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">2. Select Project</label>
+          <select id="projectSelect" onchange="onProjectChange()" class="w-full bg-slate-50 border border-slate-300 hover:border-slate-400 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-amber-500 transition">
+            <option value="ALL">All Projects (Consolidated)</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">3. Select SPV Entity</label>
+          <select id="spvSelect" onchange="applyFiltersAndRender()" class="w-full bg-slate-50 border border-slate-300 hover:border-slate-400 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:border-amber-500 transition">
+            <option value="ALL">All SPVs (Consolidated)</option>
+          </select>
+        </div>
+
+        <div class="bg-gradient-to-br from-amber-50/80 via-white to-emerald-50/60 border border-amber-300/80 rounded-xl p-3 shadow-xs flex flex-col justify-between relative overflow-hidden group">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+              <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              Project Scale & Scope
+            </span>
+            <span class="text-[9px] font-black uppercase tracking-wider bg-slate-900 text-amber-400 px-2 py-0.5 rounded shadow-2xs">Live View</span>
+          </div>
+          <div class="flex items-center gap-2 mt-0.5">
+            <div class="flex items-center gap-1.5 bg-amber-100/70 border border-amber-300/80 px-2.5 py-1 rounded-lg">
+              <i class="fa-solid fa-bolt-lightning text-amber-600 text-xs"></i>
+              <span id="badgeCapacity" class="num-font text-sm font-black text-amber-950">0 MW</span>
+            </div>
+            <span class="text-slate-300 font-light text-base">/</span>
+            <div class="flex items-center gap-1.5 bg-emerald-100/70 border border-emerald-300/80 px-2.5 py-1 rounded-lg">
+              <i class="fa-solid fa-draw-polygon text-emerald-600 text-xs"></i>
+              <span id="badgeTargetLand" class="num-font text-sm font-black text-emerald-950">0 Acres</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRIMARY METRICS ROW 1 -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500 mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Project Capacity</span>
+          <div class="w-7 h-7 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center text-xs">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+        </div>
+        <div class="num-font text-3xl font-extrabold text-slate-900" id="kpiCapacity">0 <span class="text-sm font-medium text-slate-400">MW</span></div>
+        <div class="text-[11px] text-slate-500 mt-2 border-t border-slate-100 pt-2 flex items-center justify-between">
+          <span>Density Ratio</span>
+          <span class="num-font font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[10px]" id="kpiDensity">0.00 Acre/MW</span>
+        </div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500 mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Target Land</span>
+          <div class="w-7 h-7 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-xs">
+            <i class="fa-solid fa-map-location-dot"></i>
+          </div>
+        </div>
+        <div class="num-font text-3xl font-extrabold text-slate-900" id="kpiTargetLand">0 <span class="text-sm font-medium text-slate-400">Acres</span></div>
+        <div class="text-[11px] text-slate-500 mt-2 border-t border-slate-100 pt-2 flex items-center justify-between">
+          <span>Total Planned Footprint</span>
+          <span class="num-font font-bold text-indigo-600 text-[10px] bg-indigo-50 px-2 py-0.5 rounded">100% Target</span>
+        </div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500 mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Executed Land</span>
+          <div class="w-7 h-7 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-xs">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <div class="num-font text-3xl font-extrabold text-emerald-600" id="kpiExecutedLand">0</div>
+          <span class="text-xs font-medium text-slate-400">Acres</span>
+          <span id="kpiExecutedPercentBadge" class="num-font ml-auto bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black px-2 py-0.5 rounded-full">0.0%</span>
+        </div>
+        <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-3">
+          <div id="landProgressBar" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="text-[10px] text-slate-400 mt-2 flex justify-between">
+          <span>Acquisition Progress</span>
+          <span class="num-font font-bold text-emerald-700" id="kpiExecutedLandSub">0 Acres Executed</span>
+        </div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col justify-between">
+        <div class="flex items-center justify-between text-slate-500 mb-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider">Balance Pending Land</span>
+          <div class="w-7 h-7 bg-rose-50 text-rose-600 rounded-lg flex items-center justify-center text-xs">
+            <i class="fa-solid fa-hourglass-half"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline gap-2">
+          <div class="num-font text-3xl font-extrabold text-rose-600" id="kpiBalanceLand">0</div>
+          <span class="text-xs font-medium text-slate-400">Acres</span>
+          <span id="kpiBalancePercentBadge" class="num-font ml-auto bg-rose-50 text-rose-700 border border-rose-200 text-xs font-black px-2 py-0.5 rounded-full">0.0%</span>
+        </div>
+        <div class="text-[11px] text-slate-500 mt-2 border-t border-slate-100 pt-2 flex items-center justify-between">
+          <span>Acquisition Pending</span>
+          <span class="num-font font-bold text-rose-600 text-[10px]" id="kpiBalancePercent">0% Pending</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRIMARY METRICS ROW 2: FINANCIALS -->
+    <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs">
+        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Estimated Budget</span>
+        <div class="num-font text-lg font-extrabold text-slate-900 mt-1" id="kpiEstBudget">₹ 0</div>
+        <span class="text-[10px] text-slate-400">Approved Sanction</span>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Farmer Rental</span>
+          <span id="farmerPercentBadge" class="num-font text-[10px] font-black bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded border border-blue-100">0%</span>
+        </div>
+        <div class="num-font text-lg font-extrabold text-slate-900 mt-1" id="kpiFarmerRental">₹ 0</div>
+        <span class="text-[10px] text-slate-400">Lease / Direct Payout</span>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total LA Fees</span>
+          <span id="laPercentBadge" class="num-font text-[10px] font-black bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200">0%</span>
+        </div>
+        <div class="num-font text-lg font-extrabold text-slate-900 mt-1" id="kpiLaFees">₹ 0</div>
+        <span class="text-[10px] text-slate-400">Liaisoning Aggregate</span>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Stamp & Reg.</span>
+          <span id="stampPercentBadge" class="num-font text-[10px] font-black bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded border border-purple-100">0%</span>
+        </div>
+        <div class="num-font text-lg font-extrabold text-slate-900 mt-1" id="kpiStampDuty">₹ 0</div>
+        <span class="text-[10px] text-slate-400">Govt. Registration Fees</span>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-xl p-3.5 shadow-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Other Charges</span>
+          <span id="otherPercentBadge" class="num-font text-[10px] font-black bg-emerald-50 text-emerald-700 px-1.5 py-0.5 rounded border border-emerald-100">0%</span>
+        </div>
+        <div class="num-font text-lg font-extrabold text-slate-900 mt-1" id="kpiOtherCharges">₹ 0</div>
+        <span class="text-[10px] text-slate-400">Mutation, Legal, Admin</span>
+      </div>
+
+      <div class="bg-gradient-to-br from-white to-amber-50/50 border border-amber-200 rounded-xl p-3.5 shadow-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-[10px] font-black text-amber-800 uppercase tracking-wider">Total Incurred</span>
+          <span id="totalPercentBadge" class="num-font text-[10px] font-black bg-amber-500 text-slate-950 px-1.5 py-0.5 rounded shadow-2xs">0%</span>
+        </div>
+        <div class="num-font text-lg font-black text-slate-950 mt-1" id="kpiTotalExpenditure">₹ 0</div>
+        <span class="num-font text-[10px] font-bold text-emerald-600 block mt-0.5" id="kpiVarianceSummary">Savings: +₹ 0</span>
+      </div>
+    </div>
+
+    <!-- DYNAMIC LAND AGGREGATORS (LA) BREAKDOWN -->
+    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+        <div class="flex items-center gap-2">
+          <div class="w-6 h-6 bg-amber-50 text-amber-600 rounded-md flex items-center justify-center text-xs">
+            <i class="fa-solid fa-handshake"></i>
+          </div>
+          <div>
+            <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800">Land Associates (LA) Separate Fees & Disbursement Distribution</h2>
+            <p class="text-[11px] text-slate-400">Track individual ground liaisoning partners across active selection</p>
+          </div>
+        </div>
+        <span class="text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 px-2.5 py-1 rounded-md" id="activeLaCountBadge">
+          0 Active Partner(s)
+        </span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="laCardsContainer"></div>
+    </div>
+
+    <!-- CHARTS SECTION -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+          <div>
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Land Acquisition Status Breakdown</h3>
+            <p class="text-[11px] text-slate-400">Target Acreage vs. Executed vs. Balance Pending</p>
+          </div>
+          <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">Unit: Acres</span>
+        </div>
+        <div class="h-64">
+          <canvas id="landProgressionChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
+        <div class="flex items-center justify-between mb-4 pb-2 border-b border-slate-100">
+          <div>
+            <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Rental & Capital Outlay Distribution</h3>
+            <p class="text-[11px] text-slate-400">Farmer Rental vs LA Disbursed vs Stamp Duty vs Other Charges</p>
+          </div>
+          <span class="text-[10px] font-bold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-md">Unit: Indian Rupees (₹)</span>
+        </div>
+        <div class="h-64">
+          <canvas id="expenseBreakdownChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILTERED MASTER REGISTRY TABLE (VIEW ONLY) -->
+    <div class="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+      <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-table-list text-slate-500 text-xs"></i>
+          <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider">Filtered Records Master Registry</h3>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="recordCountBadge" class="text-xs font-bold text-slate-600 bg-white border border-slate-200 px-2.5 py-1 rounded-md">0 Records Active</span>
+        </div>
+      </div>
+      <div class="overflow-x-auto max-h-96">
+        <table class="w-full text-xs text-left text-slate-600 whitespace-nowrap">
+          <thead class="text-[10px] uppercase font-bold tracking-wider bg-slate-100/80 text-slate-600 border-b border-slate-200 sticky top-0">
+            <tr>
+              <th class="px-3.5 py-3">SN</th>
+              <th class="px-3.5 py-3">State</th>
+              <th class="px-3.5 py-3 font-bold text-slate-900">Project</th>
+              <th class="px-3.5 py-3">SPV</th>
+              <th class="px-3.5 py-3 text-amber-700">LA Name</th>
+              <th class="px-3.5 py-3">LA Contact</th>
+              <th class="px-3.5 py-3">Rent/Acre/Year</th>
+              <th class="px-3.5 py-3">Escalation</th>
+              <th class="px-3.5 py-3 font-bold text-slate-900">Capacity (MW)</th>
+              <th class="px-3.5 py-3">Target Land (Acres)</th>
+              <th class="px-3.5 py-3 font-bold text-emerald-700">Executed Land (Acres)</th>
+              <th class="px-3.5 py-3">Est. Budget (₹)</th>
+              <th class="px-3.5 py-3">Farmer Rental (₹)</th>
+              <th class="px-3.5 py-3 font-bold text-amber-700">LA Fees (₹)</th>
+              <th class="px-3.5 py-3">Stamp Duty & Reg. (₹)</th>
+              <th class="px-3.5 py-3">Other Charges (₹)</th>
+              <th class="px-3.5 py-3 font-black text-slate-950">Total Expenditure (₹)</th>
+              <th class="px-3.5 py-3 text-slate-500">Remarks</th>
+            </tr>
+          </thead>
+          <tbody id="dataTableBody" class="divide-y divide-slate-100"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <footer class="bg-white border-t border-slate-200 px-6 py-3 text-center text-xs text-slate-400">
+    ACEN India Renewable Energy Portfolio • Land Acquisition & Aggregator MIS
+  </footer>
+
+  <script>
+    const DEFAULT_PIN = "ACEN@2026"; // Restricted Passcode
+
+    function checkAccess() {
+      const pin = document.getElementById('accessPin').value;
+      if (pin === DEFAULT_PIN) {
+        sessionStorage.setItem('ACEN_AUTH_PASSED', 'true');
+        document.getElementById('authGate').classList.add('hidden');
+        document.getElementById('authError').classList.add('hidden');
+      } else {
+        document.getElementById('authError').classList.remove('hidden');
+      }
+    }
+
+    function lockScreen() {
+      sessionStorage.removeItem('ACEN_AUTH_PASSED');
+      document.getElementById('authGate').classList.remove('hidden');
+      document.getElementById('accessPin').value = '';
+    }
+
+    let masterData = [];
+    let filteredData = [];
+    let landChartInstance = null;
+    let expenseChartInstance = null;
+
+    function formatINR(val) {
+      if (isNaN(val) || val === null || val === undefined) return "₹ 0";
+      return "₹ " + Number(val).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+    }
+
+    function parseNum(val) {
+      if (!val) return 0;
+      if (typeof val === 'number') return val;
+      let str = String(val).trim().replace(/â/g, '').replace(/,/g, '').replace(/[¹₹\s]/g, '').replace(/'/g, '');
+      if (str.toLowerCase().includes('cr')) {
+        let clean = parseFloat(str.toLowerCase().replace('cr', '').trim());
+        return isNaN(clean) ? 0 : clean * 10000000;
+      }
+      let res = parseFloat(str);
+      return isNaN(res) ? 0 : res;
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (sessionStorage.getItem('ACEN_AUTH_PASSED') === 'true') {
+        document.getElementById('authGate').classList.add('hidden');
+      }
+      document.getElementById('accessPin').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') checkAccess();
+      });
+
+      initCharts();
+      fetchCloudData();
+    });
+
+    async function fetchCloudData() {
+      const badge = document.getElementById('syncBadge');
+      const icon = document.getElementById('refreshIcon');
+      if (icon) icon.classList.add('fa-spin');
+      if (badge) {
+        badge.innerText = "Fetching...";
+        badge.className = "text-[11px] text-amber-600 font-bold hidden sm:inline";
+      }
+
+      try {
+        const response = await fetch('./data.json?t=' + new Date().getTime());
+        if (!response.ok) throw new Error("Waiting for data.json upload");
+        const json = await response.json();
+        
+        let rows = Array.isArray(json) ? json : (json.value || []);
+        if (rows.length > 0) {
+          processData(rows);
+          if (badge) {
+            badge.innerText = `Live: ${new Date().toLocaleTimeString()}`;
+            badge.className = "text-[11px] text-emerald-600 font-bold hidden sm:inline";
+          }
+        }
+      } catch (err) {
+        const cached = localStorage.getItem('ACEN_LIVE_DATA_CACHE');
+        if (cached) {
+          processData(JSON.parse(cached));
+          if (badge) {
+            badge.innerText = "Loaded (Cached)";
+            badge.className = "text-[11px] text-slate-500 font-bold hidden sm:inline";
+          }
+        } else {
+          if (badge) {
+            badge.innerText = "No data.json yet";
+            badge.className = "text-[11px] text-rose-500 font-bold hidden sm:inline";
+          }
+        }
+      } finally {
+        if (icon) icon.classList.remove('fa-spin');
+      }
+    }
+
+    function processData(rows) {
+      masterData = rows.map((r, idx) => {
+        const getVal = (keywords, def = '') => {
+          for (let k in r) {
+            let cleanKey = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+            for (let word of keywords) {
+              if (cleanKey.includes(word)) return r[k];
+            }
+          }
+          return def;
+        };
+
+        return {
+          SN: getVal(['sn', 'sno'], idx + 1),
+          State: String(getVal(['state'], 'Other')).trim(),
+          Project: String(getVal(['project'], 'Default Project')).trim(),
+          SPV: String(getVal(['spv'], 'Default SPV')).trim(),
+          LA_Name: String(getVal(['laname', 'associate'], 'LA Agency')).trim(),
+          LA_Contact: String(getVal(['contact', 'phone', 'mobile'], '99XXXXXX00')).trim(),
+          Rent_Per_Acre: String(getVal(['rent', 'acreyear'], '₹26,000.00')).replace(/â|¹|'/g, '').trim(),
+          Escalation: String(getVal(['escalation'], '5% every 3 years')).trim(),
+          Capacity_MW: parseNum(getVal(['capacity', 'mw'])),
+          Target_Land: parseNum(getVal(['targetland', 'target'])),
+          Executed_Land: parseNum(getVal(['executedland', 'executed'])),
+          Estimated_Budget: parseNum(getVal(['budget', 'estimated'])),
+          Farmer_Rental: parseNum(getVal(['farmerrental', 'rental', 'farmer'])),
+          LA_Fees: parseNum(getVal(['lafees', 'fees', 'liaison'])),
+          Stamp_Duty: parseNum(getVal(['stamp', 'registration'])),
+          Other_Charges: parseNum(getVal(['othercharges', 'other'])),
+          Remarks: String(getVal(['remark', 'notes'], ''))
+        };
+      }).filter(r => r.Project && r.State);
+
+      localStorage.setItem('ACEN_LIVE_DATA_CACHE', JSON.stringify(rows));
+      populateFilters();
+    }
+
+    function populateFilters() {
+      const stateSelect = document.getElementById('stateSelect');
+      const uniqueStates = [...new Set(masterData.map(d => d.State))].filter(Boolean);
+      stateSelect.innerHTML = `<option value="ALL">All States (Consolidated)</option>` + 
+        uniqueStates.map(s => `<option value="${s}">${s}</option>`).join('');
+
+      stateSelect.value = "ALL";
+      onStateChange();
+    }
+
+    function onStateChange() {
+      const state = document.getElementById('stateSelect').value;
+      const projectSelect = document.getElementById('projectSelect');
+
+      let filteredProjects = state === 'ALL' 
+        ? masterData 
+        : masterData.filter(d => d.State === state);
+
+      const projects = [...new Set(filteredProjects.map(d => d.Project))].filter(Boolean);
+      projectSelect.innerHTML = `<option value="ALL">All Projects (Consolidated)</option>` + 
+        projects.map(p => `<option value="${p}">${p}</option>`).join('');
+      projectSelect.value = "ALL";
+
+      onProjectChange();
+    }
+
+    function onProjectChange() {
+      const state = document.getElementById('stateSelect').value;
+      const project = document.getElementById('projectSelect').value;
+      const spvSelect = document.getElementById('spvSelect');
+
+      let filteredSPVs = masterData.filter(d => {
+        if (state !== 'ALL' && d.State !== state) return false;
+        if (project !== 'ALL' && d.Project !== project) return false;
+        return true;
+      });
+
+      const spvs = [...new Set(filteredSPVs.map(d => d.SPV))].filter(Boolean);
+      spvSelect.innerHTML = `<option value="ALL">All SPVs (Consolidated)</option>` + 
+        spvs.map(s => `<option value="${s}">${s}</option>`).join('');
+      spvSelect.value = "ALL";
+
+      applyFiltersAndRender();
+    }
+
+    function resetFilters() {
+      document.getElementById('stateSelect').value = 'ALL';
+      onStateChange();
+    }
+
+    function applyFiltersAndRender() {
+      const sVal = document.getElementById('stateSelect').value;
+      const pVal = document.getElementById('projectSelect').value;
+      const spvVal = document.getElementById('spvSelect').value;
+
+      filteredData = masterData.filter(r => {
+        if (sVal !== 'ALL' && r.State !== sVal) return false;
+        if (pVal !== 'ALL' && r.Project !== pVal) return false;
+        if (spvVal !== 'ALL' && r.SPV !== spvVal) return false;
+        return true;
+      });
+
+      let totalCapacity = 0;
+      let targetLand = 0;
+      let executedLand = 0;
+      let estBudget = 0;
+      let farmerRental = 0;
+      let totalLaFees = 0;
+      let stampDuty = 0;
+      let otherCharges = 0;
+
+      let aggregatorMap = {};
+
+      filteredData.forEach(r => {
+        totalCapacity += r.Capacity_MW;
+        targetLand += r.Target_Land;
+        executedLand += r.Executed_Land;
+        estBudget += r.Estimated_Budget;
+        farmerRental += r.Farmer_Rental;
+        totalLaFees += r.LA_Fees;
+        stampDuty += r.Stamp_Duty;
+        otherCharges += r.Other_Charges;
+
+        const laName = r.LA_Name || 'General Aggregator';
+        if (!aggregatorMap[laName]) {
+          aggregatorMap[laName] = {
+            name: laName,
+            contact: r.LA_Contact || 'Verified',
+            disbursedFees: 0,
+            executedAcres: 0
+          };
+        }
+        aggregatorMap[laName].disbursedFees += r.LA_Fees;
+        aggregatorMap[laName].executedAcres += r.Executed_Land;
+      });
+
+      const balanceLand = Math.max(0, targetLand - executedLand);
+      const totalIncurred = farmerRental + totalLaFees + stampDuty + otherCharges;
+      const variance = estBudget - totalIncurred;
+
+      const executedPct = targetLand > 0 ? ((executedLand / targetLand) * 100).toFixed(1) : "0.0";
+      const balancePct = targetLand > 0 ? ((balanceLand / targetLand) * 100).toFixed(1) : "0.0";
+      const density = totalCapacity > 0 ? (targetLand / totalCapacity).toFixed(2) : "0.00";
+
+      const farmerPct = estBudget > 0 ? ((farmerRental / estBudget) * 100).toFixed(1) : "0.0";
+      const laPct = estBudget > 0 ? ((totalLaFees / estBudget) * 100).toFixed(1) : "0.0";
+      const stampPct = estBudget > 0 ? ((stampDuty / estBudget) * 100).toFixed(1) : "0.0";
+      const otherPct = estBudget > 0 ? ((otherCharges / estBudget) * 100).toFixed(1) : "0.0";
+      const totalPct = estBudget > 0 ? ((totalIncurred / estBudget) * 100).toFixed(1) : "0.0";
+
+      document.getElementById('badgeCapacity').innerText = `${totalCapacity.toLocaleString('en-IN')} MW`;
+      document.getElementById('badgeTargetLand').innerText = `${targetLand.toLocaleString('en-IN')} Acres`;
+
+      document.getElementById('kpiCapacity').innerHTML = `${totalCapacity.toLocaleString('en-IN')} <span class="text-sm font-medium text-slate-400">MW</span>`;
+      document.getElementById('kpiDensity').innerText = `${density} Acre/MW`;
+
+      document.getElementById('kpiTargetLand').innerHTML = `${targetLand.toLocaleString('en-IN')} <span class="text-sm font-medium text-slate-400">Acres</span>`;
+      document.getElementById('kpiExecutedLand').innerText = executedLand.toLocaleString('en-IN');
+      document.getElementById('kpiExecutedPercentBadge').innerText = `${executedPct}%`;
+      document.getElementById('landProgressBar').style.width = `${Math.min(100, executedPct)}%`;
+      document.getElementById('kpiExecutedLandSub').innerText = `${executedLand.toLocaleString('en-IN')} Acres Executed`;
+
+      document.getElementById('kpiBalanceLand').innerText = balanceLand.toLocaleString('en-IN');
+      document.getElementById('kpiBalancePercentBadge').innerText = `${balancePct}%`;
+      document.getElementById('kpiBalancePercent').innerText = `${balancePct}% Pending`;
+
+      document.getElementById('kpiEstBudget').innerText = formatINR(estBudget);
+      document.getElementById('kpiFarmerRental').innerText = formatINR(farmerRental);
+      document.getElementById('farmerPercentBadge').innerText = `${farmerPct}%`;
+
+      document.getElementById('kpiLaFees').innerText = formatINR(totalLaFees);
+      document.getElementById('laPercentBadge').innerText = `${laPct}%`;
+
+      document.getElementById('kpiStampDuty').innerText = formatINR(stampDuty);
+      document.getElementById('stampPercentBadge').innerText = `${stampPct}%`;
+
+      document.getElementById('kpiOtherCharges').innerText = formatINR(otherCharges);
+      document.getElementById('otherPercentBadge').innerText = `${otherPct}%`;
+
+      document.getElementById('kpiTotalExpenditure').innerText = formatINR(totalIncurred);
+      document.getElementById('totalPercentBadge').innerText = `${totalPct}%`;
+
+      const varEl = document.getElementById('kpiVarianceSummary');
+      if (variance >= 0) {
+        varEl.className = "num-font text-[10px] font-bold text-emerald-600 block mt-0.5";
+        varEl.innerText = `Savings: +${formatINR(variance)}`;
+      } else {
+        varEl.className = "num-font text-[10px] font-bold text-rose-600 block mt-0.5";
+        varEl.innerText = `Overrun: -${formatINR(Math.abs(variance))}`;
+      }
+
+      renderAggregatorCards(Object.values(aggregatorMap));
+      updateCharts(targetLand, executedLand, balanceLand, farmerRental, Object.values(aggregatorMap), stampDuty, otherCharges);
+      renderTable();
+    }
+
+    function renderAggregatorCards(laList) {
+      const container = document.getElementById('laCardsContainer');
+      const badge = document.getElementById('activeLaCountBadge');
+      badge.innerText = `${laList.length} Active Partner(s)`;
+
+      if (laList.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center text-slate-400 py-6 text-xs">No Land Aggregators active under this selection</div>`;
+        return;
+      }
+
+      container.innerHTML = laList.map((la, index) => {
+        return `
+          <div class="bg-slate-50/70 border border-slate-200/90 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition">
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-[9px] uppercase tracking-wider font-extrabold text-amber-800 bg-amber-100/70 border border-amber-200 px-2 py-0.5 rounded">
+                  Associate ${index + 1}
+                </span>
+                <span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 flex items-center gap-1">
+                  <i class="fa-solid fa-circle text-[6px]"></i> Active
+                </span>
+              </div>
+              <div class="text-sm font-extrabold text-slate-900 tracking-tight truncate">${la.name}</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">
+                <i class="fa-solid fa-phone text-[9px] mr-1 text-slate-400"></i> ${la.contact}
+              </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-200 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-slate-500 font-medium">Disbursed Fees:</span>
+                <span class="num-font text-xs font-black text-amber-700">${formatINR(la.disbursedFees)}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] text-slate-500 font-medium">Executed Land:</span>
+                <span class="num-font text-xs font-bold text-slate-800">${la.executedAcres.toLocaleString('en-IN')} Acres</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function initCharts() {
+      const ctxLand = document.getElementById('landProgressionChart').getContext('2d');
+      landChartInstance = new Chart(ctxLand, {
+        type: 'bar',
+        data: {
+          labels: ['Target Land', 'Executed Land', 'Balance Pending'],
+          datasets: [{
+            data: [0, 0, 0],
+            backgroundColor: ['#6366F1', '#10B981', '#F43F5E'],
+            borderRadius: 6,
+            barThickness: 20
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: '#F1F5F9' }, ticks: { color: '#64748B', font: { family: 'Inter', size: 10 } } },
+            y: { grid: { display: false }, ticks: { color: '#1E293B', font: { weight: '600', size: 11 } } }
+          }
+        }
+      });
+
+      const ctxExp = document.getElementById('expenseBreakdownChart').getContext('2d');
+      expenseChartInstance = new Chart(ctxExp, {
+        type: 'bar',
+        data: {
+          labels: ['Farmer Rental', 'Stamp Duty', 'Other Charges'],
+          datasets: [{
+            data: [0, 0, 0],
+            backgroundColor: ['#3B82F6', '#A855F7', '#14B8A6'],
+            borderRadius: 6,
+            barThickness: 28
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { 
+              grid: { color: '#F1F5F9' }, 
+              ticks: { 
+                color: '#64748B', 
+                font: { family: 'Inter', size: 10 },
+                callback: function(value) {
+                  return '₹ ' + (value >= 10000000 ? (value/10000000).toFixed(1) + ' Cr' : (value/100000).toFixed(0) + ' L');
+                }
+              } 
+            },
+            x: { grid: { display: false }, ticks: { color: '#1E293B', font: { size: 10, weight: '600' } } }
+          }
+        }
+      });
+    }
+
+    function updateCharts(target, exec, bal, rental, laList, stamp, other) {
+      if (landChartInstance) {
+        landChartInstance.data.datasets[0].data = [target, exec, bal];
+        landChartInstance.update();
+      }
+
+      if (expenseChartInstance) {
+        let labels = ['Farmer Rental', ...laList.map(l => l.name + ' (LA)'), 'Stamp Duty', 'Other Charges'];
+        let data = [rental, ...laList.map(l => l.disbursedFees), stamp, other];
+        let colors = ['#3B82F6', '#F59E0B', '#F97316', '#8B5CF6', '#10B981', '#14B8A6'];
+
+        expenseChartInstance.data.labels = labels;
+        expenseChartInstance.data.datasets[0].data = data;
+        expenseChartInstance.data.datasets[0].backgroundColor = colors.slice(0, labels.length);
+        expenseChartInstance.update();
+      }
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('dataTableBody');
+      document.getElementById('recordCountBadge').innerText = `${filteredData.length} Records Active`;
+
+      tbody.innerHTML = filteredData.map(r => {
+        const totalExp = r.Farmer_Rental + r.LA_Fees + r.Stamp_Duty + r.Other_Charges;
+        return `
+          <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+            <td class="px-3.5 py-3 font-semibold text-slate-400">${r.SN}</td>
+            <td class="px-3.5 py-3 text-slate-700 font-medium">${r.State}</td>
+            <td class="px-3.5 py-3 font-bold text-slate-900">${r.Project}</td>
+            <td class="px-3.5 py-3 text-slate-600">${r.SPV}</td>
+            <td class="px-3.5 py-3 font-bold text-amber-700">${r.LA_Name}</td>
+            <td class="px-3.5 py-3 text-slate-500 font-mono text-[11px]">${r.LA_Contact}</td>
+            <td class="px-3.5 py-3 font-medium text-slate-700">${r.Rent_Per_Acre}</td>
+            <td class="px-3.5 py-3 text-slate-500 text-[11px]">${r.Escalation}</td>
+            <td class="px-3.5 py-3 num-font font-bold text-slate-900">${r.Capacity_MW} MW</td>
+            <td class="px-3.5 py-3 num-font text-slate-700">${r.Target_Land.toLocaleString('en-IN')}</td>
+            <td class="px-3.5 py-3 num-font font-bold text-emerald-700">${r.Executed_Land.toLocaleString('en-IN')}</td>
+            <td class="px-3.5 py-3 num-font font-medium text-slate-800">${formatINR(r.Estimated_Budget)}</td>
+            <td class="px-3.5 py-3 num-font text-slate-600">${formatINR(r.Farmer_Rental)}</td>
+            <td class="px-3.5 py-3 num-font font-bold text-amber-700">${formatINR(r.LA_Fees)}</td>
+            <td class="px-3.5 py-3 num-font text-slate-600">${formatINR(r.Stamp_Duty)}</td>
+            <td class="px-3.5 py-3 num-font text-slate-600">${formatINR(r.Other_Charges)}</td>
+            <td class="px-3.5 py-3 num-font font-black text-slate-950">${formatINR(totalExp)}</td>
+            <td class="px-3.5 py-3 text-[11px] text-slate-500 italic max-w-xs truncate">${r.Remarks || '—'}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  </script>
+</body>
+</html>
