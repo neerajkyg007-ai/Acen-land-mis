@@ -1,0 +1,41 @@
+name: Sync Land Master to GitHub
+
+on:
+  schedule:
+    # Har 15 minute mein background mein update hoga
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Manual run karne ke liye
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install Dependencies
+        run: pip install pandas requests
+
+      - name: Fetch Google Sheet and Convert to JSON
+        run: |
+          python -c "
+          import pandas as pd
+          url = 'https://docs.google.com/spreadsheets/d/1CqQy1G-V5XVNihBX9NWiLg6RYNjvou4h/export?format=csv&gid=822234970'
+          df = pd.read_csv(url)
+          df.to_json('data.json', orient='records', indent=2)
+          "
+
+      - name: Commit and Push if Changed
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-sync Land Master data [skip ci]" && git push)
