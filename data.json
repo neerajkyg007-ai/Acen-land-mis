@@ -138,5 +138,25 @@
     "Other Charges (\u20b9)":5000000,
     "Total Expenditure (\u20b9)":20000000,
     "Remarks":null
+  },
+  {
+    "SN":8,
+    "State":"rEWARI",
+    "Project":"Amaresha Renewables India Project Private Limited",
+    "SPV":"Amaresha Renewables India Project Private Limited",
+    "LA Name":"RADIANT INFRA",
+    "LA Contact":"99XXXXXX97",
+    "Rent \u20b9\/Acre\/Year":30000,
+    "Escalation":"5% every 2 years",
+    "Project Capacity (MW)":300.0,
+    "Target Land (Acres)":1200.0,
+    "Executed Land (Acres)":350,
+    "Estimated Budget (\u20b9 Cr)":35000000,
+    "Farmer Rental (\u20b9)":5000000,
+    "LA Fees (\u20b9)":5000000,
+    "Stamp Duty & Reg. (\u20b9)":5000000,
+    "Other Charges (\u20b9)":5000000,
+    "Total Expenditure (\u20b9)":20000000,
+    "Remarks":null
   }
 ]
