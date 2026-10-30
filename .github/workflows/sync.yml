@@ -1,14 +1,20 @@
+
 name: Sync Land Master to GitHub
 
 on:
   schedule:
-    # Har 15 minute mein automatically run hoga
     - cron: '*/15 * * * *'
-  workflow_dispatch: # Manual run karne ke liye
+
+  workflow_dispatch:
+
+  repository_dispatch:
+    types:
+      - land_master_updated
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+
     permissions:
       contents: write
 
@@ -24,30 +30,38 @@ jobs:
       - name: Install Dependencies
         run: pip install pandas openpyxl requests
 
-      - name: Download Excel from SharePoint and Convert to JSON
+      - name: Download Excel and Convert to JSON
         run: |
-          python -c "
+          python - <<'PY'
           import pandas as pd
           import requests
           import io
 
-          # SharePoint direct download link
           url = 'https://upcrenewables1-my.sharepoint.com/:x:/g/personal/neeraj_kumar_upcrenewables_in/IQDZDdWBHNUeSL4E17HlpBhHAehxAmpa7TFEvR8XN6r5lsc?download=1'
-          
+
           headers = {'User-Agent': 'Mozilla/5.0'}
-          response = requests.get(url, headers=headers)
-          
-          # Read Excel
+          response = requests.get(url, headers=headers, timeout=60)
+          response.raise_for_status()
+
           df = pd.read_excel(io.BytesIO(response.content))
-          
-          # Clean and save to data.json
-          df.to_json('data.json', orient='records', indent=2, date_format='iso')
-          print('Successfully converted Excel to data.json')
-          "
+
+          # Remove blank SN rows
+          df = df.dropna(subset=['SN'])
+          df = df[df['SN'].astype(str).str.strip() != '']
+
+          df.to_json(
+              'data.json',
+              orient='records',
+              indent=2,
+              date_format='iso'
+          )
+
+          print(f'Successfully converted {len(df)} records to data.json')
+          PY
 
       - name: Commit and Push if Changed
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-sync Land Master from SharePoint [skip ci]" && git push)
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Auto-sync Land Master [skip ci]" && git push)
