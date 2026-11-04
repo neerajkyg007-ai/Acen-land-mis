@@ -9,8 +9,6 @@
   <meta name="description" content="ACEN India Renewable Energy Portfolio - Real-time Land Acquisition & Aggregator MIS Executive Portal.">
   <meta name="keywords" content="ACEN Land Tracker, ACEN India, Land Acquisition MIS, Executive Portal">
   <meta name="robots" content="index, follow">
-  <!-- GOOGLE KI VERIFICATION KEY YAHAN AAYEGI AGAR MILE TOH: -->
-  <!-- <meta name="google-site-verification" content="YOUR_GOOGLE_CODE_HERE" /> -->
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -83,7 +81,7 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <button onclick="fetchCloudData()" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-2">
+        <button onclick="fetchCloudData(true)" class="bg-amber-500 hover:bg-amber-600 active:scale-95 text-slate-950 text-xs font-bold px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-2">
           <i class="fa-solid fa-arrows-rotate" id="refreshIcon"></i> <span>Refresh Live Data</span>
         </button>
         <span id="syncBadge" class="text-[11px] text-slate-400 font-medium hidden sm:inline">Checking cloud...</span>
@@ -398,6 +396,8 @@
     let filteredData = [];
     let landChartInstance = null;
     let expenseChartInstance = null;
+    let isFetching = false;
+    let lastDataHash = "";
 
     function formatINR(val) {
       if (isNaN(val) || val === null || val === undefined) return "₹ 0";
@@ -425,46 +425,74 @@
       });
 
       initCharts();
-      fetchCloudData();
+      fetchCloudData(true);
+
+      // Har 10 second mein background silent sync
+      setInterval(() => {
+        fetchCloudData(false);
+      }, 10000);
     });
 
-    async function fetchCloudData() {
+    async function fetchCloudData(isManual = false) {
+      if (isFetching) return;
+      isFetching = true;
+
       const badge = document.getElementById('syncBadge');
       const icon = document.getElementById('refreshIcon');
-      if (icon) icon.classList.add('fa-spin');
-      if (badge) {
+      
+      if (isManual && icon) icon.classList.add('fa-spin');
+      if (isManual && badge) {
         badge.innerText = "Fetching...";
         badge.className = "text-[11px] text-amber-600 font-bold hidden sm:inline";
       }
 
       try {
-        const response = await fetch('./data.json?t=' + new Date().getTime());
+        const cacheBuster = Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+        const response = await fetch(`./data.json?_t=${cacheBuster}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          }
+        });
+
         if (!response.ok) throw new Error("Waiting for data.json upload");
         const json = await response.json();
         
         let rows = Array.isArray(json) ? json : (json.value || []);
-        if (rows.length > 0) {
+        const rawString = JSON.stringify(rows);
+
+        // Sirf tab dobara re-render karega jab data actual mein change hua ho
+        if (rawString !== lastDataHash && rows.length > 0) {
+          lastDataHash = rawString;
           processData(rows);
           if (badge) {
             badge.innerText = `Live: ${new Date().toLocaleTimeString()}`;
             badge.className = "text-[11px] text-emerald-600 font-bold hidden sm:inline";
           }
+        } else if (badge && rows.length > 0) {
+          badge.innerText = `Synced: ${new Date().toLocaleTimeString()}`;
+          badge.className = "text-[11px] text-emerald-600 font-bold hidden sm:inline";
         }
       } catch (err) {
-        const cached = localStorage.getItem('ACEN_LIVE_DATA_CACHE');
-        if (cached) {
-          processData(JSON.parse(cached));
-          if (badge) {
-            badge.innerText = "Loaded (Cached)";
-            badge.className = "text-[11px] text-slate-500 font-bold hidden sm:inline";
-          }
-        } else {
-          if (badge) {
-            badge.innerText = "No data.json yet";
-            badge.className = "text-[11px] text-rose-500 font-bold hidden sm:inline";
+        if (masterData.length === 0) {
+          const cached = localStorage.getItem('ACEN_LIVE_DATA_CACHE');
+          if (cached) {
+            processData(JSON.parse(cached));
+            if (badge) {
+              badge.innerText = "Loaded (Cached)";
+              badge.className = "text-[11px] text-slate-500 font-bold hidden sm:inline";
+            }
+          } else {
+            if (badge) {
+              badge.innerText = "No data.json yet";
+              badge.className = "text-[11px] text-rose-500 font-bold hidden sm:inline";
+            }
           }
         }
       } finally {
+        isFetching = false;
         if (icon) icon.classList.remove('fa-spin');
       }
     }
@@ -508,17 +536,20 @@
 
     function populateFilters() {
       const stateSelect = document.getElementById('stateSelect');
+      const currentState = stateSelect.value || "ALL";
+
       const uniqueStates = [...new Set(masterData.map(d => d.State))].filter(Boolean);
       stateSelect.innerHTML = `<option value="ALL">All States (Consolidated)</option>` + 
         uniqueStates.map(s => `<option value="${s}">${s}</option>`).join('');
 
-      stateSelect.value = "ALL";
-      onStateChange();
+      stateSelect.value = uniqueStates.includes(currentState) ? currentState : "ALL";
+      onStateChange(true);
     }
 
-    function onStateChange() {
+    function onStateChange(preserveProject = false) {
       const state = document.getElementById('stateSelect').value;
       const projectSelect = document.getElementById('projectSelect');
+      const currentProject = projectSelect.value || "ALL";
 
       let filteredProjects = state === 'ALL' 
         ? masterData 
@@ -527,15 +558,16 @@
       const projects = [...new Set(filteredProjects.map(d => d.Project))].filter(Boolean);
       projectSelect.innerHTML = `<option value="ALL">All Projects (Consolidated)</option>` + 
         projects.map(p => `<option value="${p}">${p}</option>`).join('');
-      projectSelect.value = "ALL";
-
-      onProjectChange();
+      
+      projectSelect.value = (preserveProject && projects.includes(currentProject)) ? currentProject : "ALL";
+      onProjectChange(preserveProject);
     }
 
-    function onProjectChange() {
+    function onProjectChange(preserveSpv = false) {
       const state = document.getElementById('stateSelect').value;
       const project = document.getElementById('projectSelect').value;
       const spvSelect = document.getElementById('spvSelect');
+      const currentSpv = spvSelect.value || "ALL";
 
       let filteredSPVs = masterData.filter(d => {
         if (state !== 'ALL' && d.State !== state) return false;
@@ -546,8 +578,8 @@
       const spvs = [...new Set(filteredSPVs.map(d => d.SPV))].filter(Boolean);
       spvSelect.innerHTML = `<option value="ALL">All SPVs (Consolidated)</option>` + 
         spvs.map(s => `<option value="${s}">${s}</option>`).join('');
-      spvSelect.value = "ALL";
-
+      
+      spvSelect.value = (preserveSpv && spvs.includes(currentSpv)) ? currentSpv : "ALL";
       applyFiltersAndRender();
     }
 
